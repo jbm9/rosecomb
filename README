@@ -1,9 +1,30 @@
-.skel
-=====
+rosecomb
+========
 
-This is a skeleton project.  It needs better documentation.
+Rosecomb is a proposed satellite surveillance system.  The eventual
+goal is an automated system that records Lecault-quality images
+automatically, but we'll start smaller.
 
-Contents:
+Another possible application to address is validating/refining TLEs
+for tracked objects.
 
-web/ -- An empty website for this thing
-code/ -- An empty directory for code for this thing
+Required capabilities:
+* Imaging from a telescope
+* Telescope GoTo control
+* Telescope focusing
+* Image processing
+* Prediction of position of satellite
+* Prediction of position of sun
+* (Automatic location of ground station?)
+* Recognition of background stars (for TLE extraction)
+
+
+All of the astro-imaging-related items can be developed under
+'orpington', which is more or less aimed at those things anyway.  One
+of the goals in orpington is to do imaging of solar system objects (eg
+Jupiter and its moons), which is similar in scope to imaging larger
+satellites, though with a markedly slower slew rate.
+
+We can also build some baseline capabilities for the TLE extraction
+case by adding closed-loop GoTo using star recognition, which gets the
+capability to recognize starfields on the ground.
