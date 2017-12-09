@@ -6,19 +6,19 @@
 
 #include<Wire.h>
 
+////////////////////////////////////////////////////////////
+// MPU-6050 Stuff
 const int MPU_addr=0x68;  // I2C address of the MPU-6050
 int16_t AcX,AcY,AcZ,Tmp,GyX,GyY,GyZ; // MPU sensors
 
-void setup(){
-  Wire.begin();
+void mpu_wakeup() {
   Wire.beginTransmission(MPU_addr);
   Wire.write(0x6B);  // PWR_MGMT_1 register
   Wire.write(0);     // set to zero (wakes up the MPU-6050)
-  Wire.endTransmission(true);
-  Serial.begin(9600);
+  Wire.endTransmission(true);  
 }
 
-void read_mpu() {
+void mpu_read() {
   Wire.beginTransmission(MPU_addr);
   Wire.write(0x3B);  // starting with register 0x3B (ACCEL_XOUT_H)
   Wire.endTransmission(false);
@@ -33,8 +33,17 @@ void read_mpu() {
 }
 
 
+////////////////////////////////////////////////////////////
+// Main routines
+//
+void setup(){
+  Wire.begin();
+  Serial.begin(115200);
+  mpu_wakeup();
+}
+
 void loop(){
-  read_mpu();
+  mpu_read();
   Serial.print("AcX = "); Serial.print(AcX);
   Serial.print(" | AcY = "); Serial.print(AcY);
   Serial.print(" | AcZ = "); Serial.print(AcZ);
