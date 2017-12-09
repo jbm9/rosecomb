@@ -101,8 +101,9 @@ const char MAG_AXES[3] = {  0, 1, 2 }; // orientation of mag axes on frame
 
 
 void mag_setup() {
-  if (mag3110.initialize())  {
-    Serial.println("Sensor found!");    
+  if (mag3110.initialize(20))  {
+    Serial.println("Sensor found!");
+    mag3110.setSensorAutoReset();
   } else {
     Serial.println("Sensor missing");
     while(1) {};
@@ -111,8 +112,7 @@ void mag_setup() {
 
 
 ////////////////////////////////////////////////////////////
-// Main routines
-//
+// Main routines//
 void setup(){
   Wire.begin();
   Serial.begin(115200);
@@ -158,16 +158,16 @@ void loop(){
 
   Serial.print("Ac"); COMMA;
   for (char i = 0; i < 3; i++) {
-    Serial.print(Ac[i]); COMMA;
+    Serial.print(Ac[ MPU_AXES[i] ]); COMMA;
   }
 
   Serial.print("Gy"); COMMA;
   for (char i = 0; i < 3; i++) {
-    Serial.print(Ac[i]); COMMA;
+    Serial.print(Gy[ MPU_AXES[i] ]); COMMA;
   }
 
   Serial.println();
 #undef COMMA
 
-  delay(1000);
+  delay(50);
 }
