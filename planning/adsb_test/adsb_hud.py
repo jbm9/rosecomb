@@ -77,33 +77,52 @@ PLANES = {} # addr => ECIPP(plane)
 qth = ECIEarthPoints(OBS_LOC[0], OBS_LOC[1], OBS_LOC[2])
 qth_pt = qth.at(0)
 
+def plane_pos(pt):
+    alt,az = map(np.rad2deg, qth.alt_az(0, pt))
+    d = np.linalg.norm(qth_pt.range_to(pt))
+    return (alt, az, d)
+
 def plane_spotted(plane):
     PLANES[plane.addr] = ECIPlanePoint(plane)
-    if plane.last_printed < (time.time() - 3) and \
+
+    if plane.lat != 0 and plane.last_printed < (time.time() - 3) and \
        (plane.last_printed < plane.pos_ts or plane.last_printed < plane.vector_ts):
-        #        if plane.flight:
-        #            print plane
-        if plane.lat != 0:
-            pt = PLANES[plane.addr].at(0)
+        pt = PLANES[plane.addr].at(0)
 
-            alt,az = map(np.rad2deg, qth.alt_az(0, pt))
-            d = np.linalg.norm(qth_pt.range_to(pt))
-            r2 = qth_pt.range_to(pt)
+        alt,az,d = plane_pos(pt)
+        pxpos = aa_deg2px(alt,az)
+        flag = "*** " if pxpos else "    "
+        if pxpos:
+            flag = "*** "
 
-            pxpos = aa_deg2px(alt,az)
-
-            flag = "*** " if pxpos else "    "
-            if pxpos:
-                flag = "*** "
-
-            print "%s[%8s] alt=%5.2f az=%6.2f d=%5.1f el=%5d (%6.3f,%7.3f) / (%6.3f, %6.3f) / %s" % (flag, plane.flight if plane.flight else "##" + plane.addr, alt, az, d, plane.alt, plane.lat, plane.lon, plane.lat - np.rad2deg(qth.lat), plane.lon - np.rad2deg(qth.lon), pxpos)
+        print "%s[%8s] alt=%5.2f az=%6.2f d=%5.1f el=%5d (%6.3f,%7.3f) / (%6.3f, %6.3f) / %s" % (flag, plane.flight if plane.flight else "##" + plane.addr, alt, az, d, plane.alt, plane.lat, plane.lon, plane.lat - np.rad2deg(qth.lat), plane.lon - np.rad2deg(qth.lon), pxpos)
         plane.last_printed = time.time()
 
-al = ADSBListener('localhost', 30003, plane_spotted)
-while True:
-    al._poll()
-    time.sleep(0.001)
-    deleted = al.expire(time.time() - 10)
-    for addr in deleted:
-        print "         Expired %s" % addr
 
+def adsb_worker():
+    al = ADSBListener('localhost', 30003, plane_spotted)
+    while True:
+        al._poll()
+        time.sleep(0.001)
+        deleted = al.expire(time.time() - 10)
+        for addr in deleted:
+            print "         Expired %s" % addr
+
+
+import threading
+d = threading.Thread(name='adsb_worker', target=adsb_worker)
+d.setDaemon(True)
+
+
+d.start()
+
+while True:
+    time.sleep(1)
+    for ecipp in PLANES.values():
+        if ecipp.lon == 0:
+            continue
+        alt,az,d = plane_pos(ecipp.at(0))
+        pxpos = aa_deg2px(alt,az)
+
+        if pxpos:
+            print ecipp.plane.addr, pxpos
