@@ -14,7 +14,11 @@ import cv2
 
 from adsb_listener import ADSBListener
 
+import os
+
 from eci import *
+
+from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
 
 
 OBS_LOC = [np.deg2rad(37.728206),np.deg2rad(-122.407863), 25] # lat,long,alt (meters)
@@ -117,6 +121,57 @@ d.setDaemon(True)
 d.start()
 
 
+curimg = None
+
+############################################################
+# HTTP Server bits
+
+
+class CamHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        print self.path
+        if self.path.endswith('.mjpg'):
+            self.send_response(200)
+            self.send_header('Content-type','multipart/x-mixed-replace; boundary=--jpgboundary')
+            self.end_headers()
+            while True:
+                if curimg is None:
+                    return
+                imgRGB = cv2.cvtColor(curimg,cv2.COLOR_BGR2RGB)
+                r, buf = cv2.imencode(".jpg",imgRGB)
+                self.wfile.write("--jpgboundary\r\n")
+                self.send_header('Content-type','image/jpeg')
+                self.send_header('Content-length',str(len(buf)))
+                self.end_headers()
+                self.wfile.write(bytearray(buf))
+                self.wfile.write('\r\n')
+                time.sleep(0.1)
+            return
+        if self.path.endswith('.html') or self.path=="/":
+            self.send_response(200)
+            self.send_header('Content-type','text/html')
+            self.end_headers()
+            self.wfile.write('<html><head></head><body>')
+            self.wfile.write('<img src="http://127.0.0.1:9090/cam.mjpg"/>')
+            self.wfile.write('</body></html>')
+            return
+
+def http_worker():
+    server = HTTPServer(('',9090),CamHandler)
+    print "Server started"
+    server.serve_forever()
+http_server = threading.Thread(name='http_server', target=http_worker)
+http_server.setDaemon(True)
+http_server.start()
+
+
+
+
+############################################################
+# Actual main loop
+
+
+
 cap = cv2.VideoCapture(-1)
 if not cap.isOpened():
     raise Exception("Couldn't open video capture")
@@ -156,12 +211,17 @@ while True:
             cv2.putText(img, nom, (x,y), cv2.FONT_HERSHEY_PLAIN, 50.0/d, text_color, thickness=1)
 
             #print ecipp.plane.addr, pxpos
-    cv2.imshow("input", img)
 
+    curimg = img
     sleep_time = 10 if any_planes else 300
-    key = cv2.waitKey(sleep_time)
-    if key == 27:
-        break
+
+    if os.getenv("DISPLAY"):
+        cv2.imshow("input", img)
+        key = cv2.waitKey(sleep_time)
+        if key == 27:
+            break
+    else:
+        time.sleep(sleep_time/1000.0)
 
 
 cv2.destroyAllWindows()
