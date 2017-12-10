@@ -132,21 +132,6 @@ OBS_PX[1] = frame.shape[1]
 print "Reset OBS_PX to %s" % OBS_PX
 
 
-
-
-def corner(filename) :
- im= filename
-
- gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-
- corners = cv2.goodFeaturesToTrack(gray,25,0.01,10)
- corners = np.int0(corners)
-
- for i in corners:
-    x,y = i.ravel()
-
- return im
-
 while True:
     ret,img = cap.read()
 
@@ -171,9 +156,9 @@ while True:
             cv2.putText(img, nom, (x,y), cv2.FONT_HERSHEY_PLAIN, 50.0/d, text_color, thickness=1)
 
             #print ecipp.plane.addr, pxpos
-    cv2.imshow("input", corner(img))
+    cv2.imshow("input", img)
 
-    sleep_time = 10 if any_planes else 030nnewsn
+    sleep_time = 10 if any_planes else 300
     key = cv2.waitKey(sleep_time)
     if key == 27:
         break
