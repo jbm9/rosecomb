@@ -22,9 +22,9 @@ from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
 
 
 OBS_LOC = [np.deg2rad(37.728206),np.deg2rad(-122.407863), 25] # lat,long,alt (meters)
-OBS_HEADING = [34.0, 62.0] # alt,az, degrees
-OBS_FOV = [24.0,32.0] # span of view, degrees
-OBS_PX = [800,600]    # span of view, pixels
+OBS_HEADING = [25.0, 30.0] # alt,az, degrees
+OBS_FOV = [30.0,40.0] # span of view, degrees
+OBS_PX = [240,320]    # span of view, pixels (height, then width, because math)
 
 ADSB_HOST = "localhost"
 ADSB_PORT = 30003
