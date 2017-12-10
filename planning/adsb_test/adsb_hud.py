@@ -18,7 +18,7 @@ from eci import *
 
 
 OBS_LOC = [np.deg2rad(37.728206),np.deg2rad(-122.407863), 25] # lat,long,alt (meters)
-OBS_HEADING = [25.0, 62.0] # alt,az, degrees
+OBS_HEADING = [34.0, 62.0] # alt,az, degrees
 OBS_FOV = [24.0,32.0] # span of view, degrees
 OBS_PX = [800,600]    # span of view, pixels
 
@@ -150,6 +150,8 @@ def corner(filename) :
 while True:
     ret,img = cap.read()
 
+    any_planes = False
+
     for ecipp in PLANES.values():
         if ecipp.lon == 0:
             continue
@@ -157,16 +159,22 @@ while True:
         pxpos = aa_deg2px(alt,az)
 
         if pxpos:
+            any_planes = True
             nom = ecipp.plane.flight if ecipp.plane.flight else ecipp.plane.addr
 
+            (y,x) = pxpos
+            y = OBS_PX[0] - 1 - y # origin funtime woo
+
             text_color = (255,0,0)
-            cv2.circle(img,(pxpos[1],pxpos[0]),3,(128,128,255),-1)
-            cv2.putText(img, nom, (pxpos[1], pxpos[0]), cv2.FONT_HERSHEY_PLAIN, 1.0, text_color, thickness=1)
+            cv2.circle(img,(x,y),3,(128,128,255),-1)
+            text_height = max(30.0/d, 0.33)
+            cv2.putText(img, nom, (x,y), cv2.FONT_HERSHEY_PLAIN, 50.0/d, text_color, thickness=1)
 
             #print ecipp.plane.addr, pxpos
     cv2.imshow("input", corner(img))
 
-    key = cv2.waitKey(10)
+    sleep_time = 10 if any_planes else 030nnewsn
+    key = cv2.waitKey(sleep_time)
     if key == 27:
         break
 
