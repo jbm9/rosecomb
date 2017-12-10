@@ -4,7 +4,10 @@
 // August 17, 2014
 // Public Domain
 
-#include<Wire.h>
+#include <Wire.h>
+
+// For MAG3110 calibration, run this with
+// #define ENABLE_MAG_CAL_OUTPUT 1
 
 ////////////////////////////////////////////////////////////
 // MPU-6050 Stuff
@@ -20,18 +23,18 @@ void mpu_setup() {
   Wire.write(0x6B);  // PWR_MGMT_1 register
   Wire.write(0x00);  // Disable SLEEP, wake up
   Wire.endTransmission(true);
-  
+
   delay(1);
-  
+
   Wire.beginTransmission(MPU_addr);
   Wire.write(0x6B);  // PWR_MGMT_1 register
   Wire.write(0x01);  // Enable PLL on x-axis gyro
-  Wire.endTransmission(true);  
+  Wire.endTransmission(true);
 
   Wire.beginTransmission(MPU_addr);
   Wire.write(0x6C);  // PWR_MGMT_2 register
   Wire.write(0x01);  // Disable z-axis gyro...
-  Wire.endTransmission(true);  
+  Wire.endTransmission(true);
 
 
   Wire.beginTransmission(MPU_addr);
@@ -42,16 +45,16 @@ void mpu_setup() {
   Wire.beginTransmission(MPU_addr);
   Wire.write(0x1A);  // CONFIG, p13
   Wire.write(0x03);  // Disable FSYNC, set a 44Hz BW DLPF
-  Wire.endTransmission(true);  
+  Wire.endTransmission(true);
 
-  
-  
+
+
   Wire.beginTransmission(MPU_addr);
   Wire.write(0x6B);
   Wire.endTransmission(false);
   Wire.requestFrom(MPU_addr, 2, true);
   Serial.println(Wire.read(), HEX);
-  Serial.println(Wire.read(), HEX);  
+  Serial.println(Wire.read(), HEX);
 
   Serial.println("0x19:");
   Wire.beginTransmission(MPU_addr);
@@ -62,7 +65,7 @@ void mpu_setup() {
   Serial.println(Wire.read(), HEX);
   Serial.println(Wire.read(), HEX);
   Serial.println(Wire.read(), HEX);
-  
+
 }
 
 void mpu_read() {
@@ -80,12 +83,12 @@ void mpu_read() {
   Wire.write(0x3B);  // starting with register 0x3B (ACCEL_XOUT_H)
   Wire.endTransmission(false);
   Wire.requestFrom(MPU_addr,6,true);  // request a total of 14 registers
-  Ac[0]=Wire.read()<<8|Wire.read();  // 0x3B (ACCEL_XOUT_H) & 0x3C (ACCEL_XOUT_L)    
+  Ac[0]=Wire.read()<<8|Wire.read();  // 0x3B (ACCEL_XOUT_H) & 0x3C (ACCEL_XOUT_L)
   Ac[1]=Wire.read()<<8|Wire.read();  // 0x3D (ACCEL_YOUT_H) & 0x3E (ACCEL_YOUT_L)
   Ac[2]=Wire.read()<<8|Wire.read();  // 0x3F (ACCEL_ZOUT_H) & 0x40 (ACCEL_ZOUT_L)
 
   // Tmp  =Wire.read()<<8|Wire.read();  // 0x41 (TEMP_OUT_H) & 0x42 (TEMP_OUT_L)
-  
+
 }
 
 
@@ -99,11 +102,44 @@ MAG3110 mag3110;
 
 const char MAG_AXES[3] = {  0, 1, 2 }; // orientation of mag axes on frame
 
+float mag_offsets[3] = { 0.0, 0.0, 0.0 };
+
+void mag_cal() {
+  digitalWrite(13, 1);
+
+  delay(100);
+
+  const int N = 2000;
+
+  for (int i = 0; i < N; i++) {
+    float xyz_uT[3];
+    mag3110.getMeasurement(xyz_uT);
+    for (char j = 0; j < 3; j++) {
+      mag_offsets[j] += xyz_uT[j];
+    }
+    delayMicroseconds(50);
+  }
+
+  Serial.print("Calibration: ");
+  for (char j = 0; j < 3; j++) {
+    mag_offsets[j] /= N;
+    Serial.print(mag_offsets[j], 2);
+    Serial.print(" ");
+  }
+  Serial.println();
+  digitalWrite(13, 0);
+}
+
 
 void mag_setup() {
+  pinMode(13, OUTPUT);
   if (mag3110.initialize(20))  {
     Serial.println("Sensor found!");
-    mag3110.setSensorAutoReset();
+    mag3110.setRawMode(0);
+    mag3110.setSensorAutoReset(1);
+
+    mag_cal();
+
   } else {
     Serial.println("Sensor missing");
     while(1) {};
@@ -127,33 +163,25 @@ void loop(){
 
   mag3110.getMeasurement(xyz_uT);
 
-#if 0
-  Serial.print("Ac[0] = "); Serial.print(Ac[0]);
-  Serial.print(" | Ac[1] = "); Serial.print(Ac[1]);
-  Serial.print(" | Ac[2] = "); Serial.print(Ac[2]);
-
-  // Serial.print(" | Tmp = "); Serial.print(Tmp/340.00+36.53);  //equation for temperature in degrees C from datasheet
-  
-  Serial.print(" | Gy[0] = "); Serial.print(Gy[0]);
-  Serial.print(" | Gy[1] = "); Serial.print(Gy[1]);
-  Serial.print(" | Gy[2] = "); Serial.print(Gy[2]);
-
-
-  Serial.print(" | MgX = ");
-  Serial.print(xyz_uT[0],2);
-  Serial.print(" | MgY = ");
-  Serial.print(xyz_uT[1],2);
-  Serial.print(" | MgZ = ");
-  Serial.print(xyz_uT[2],2);
-  Serial.println("");
-#endif
-
 #define COMMA Serial.print(",")
+
+#if ENABLE_MAG_CAL_OUTPUT
+  // We need raw readings to use with the python calibration script
+  int16_t xyz[3];
+  mag3110.getMeasurement(xyz);
+
+  Serial.print("MR"); COMMA;
+  for (char i = 0; i < 3; i++) {
+    Serial.print(xyz[i], DEC); COMMA;
+  }
+  Serial.println();
+#endif
 
   // Rearrange axes along the actual frame.
   Serial.print("Mg"); COMMA;
   for (char i = 0; i < 3; i++) {
-    Serial.print(xyz_uT[ MAG_AXES[i] ], 3); COMMA;
+    float a = xyz_uT[ MAG_AXES[i] ] - mag_offsets[ MAG_AXES[i] ];
+    Serial.print(a, 3); COMMA;
   }
 
   Serial.print("Ac"); COMMA;
