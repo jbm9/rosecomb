@@ -1,5 +1,5 @@
 from collections import defaultdict
-
+import time
 import math
 import socket
 import sys
@@ -23,6 +23,8 @@ class Squitter:
         self.vector_ts = 0
 
         self.last_printed = None
+
+        self.seen()
 
     def seen(self):
         self.last_seen = time.time()
@@ -66,6 +68,7 @@ class ADSBListener:
                 fields = l.split(",")
                 print "BOGON: %s/%s (%s): %s" % (fields[0], fields[1], len(fields), str([ (i,s) for i,s in enumerate(fields) if s and s != '0' and i > 4]))
                 print e
+                raise
 
     def _proc(self, l):
         fields = l.split(",")
@@ -89,10 +92,13 @@ class ADSBListener:
             plane.lon = float(fields[15])
             plane.alt = float(fields[11])
             plane.pos_ts = time.time()
-        elif typ == '4' and fields[12] != '0':
-            plane.track = float(fields[12])
-            plane.speed = float(fields[13])
-            plane.vr = float(fields[16])
+        elif typ == '4':
+            if fields[12] != '0':
+                plane.track = float(fields[12])
+            if fields[13] != '0':
+                plane.speed = float(fields[13])
+            if fields[16] != '0':
+                plane.vr = float(fields[16])
             plane.vector_ts = time.time()
         elif typ == '5':
             if len(fields) == 22 and fields[11] != '0':
@@ -117,6 +123,13 @@ class ADSBListener:
         else:
             print plane
 
+
+    def expire(self, t_expiry):
+        todel = [ p.addr for p in self.planes.values() if p.last_seen < t_expiry ]
+        for addr in todel:
+            del self.planes[addr]
+        return todel
+
 if __name__ == '__main__':
     import time
 
@@ -130,14 +143,6 @@ if __name__ == '__main__':
     while True:
         al._poll()
         time.sleep(0.001)
-        expiry = time.time() - 10 # cut out all things older than a minute
-        todel = []
-
-        for addr, p in al.planes.iteritems():
-            if p.last_seen < expiry:
-                print "  Expiring plane: %s" % p
-                todel.append(addr)
-
-
-        for addr in todel:
-            del al.planes[addr]
+        deleted = al.expire(time.time() - 10)
+        for addr in deleted:
+            print "   Expired %s" % addr
