@@ -10,15 +10,17 @@
 import time
 import numpy as np
 
+import cv2
+
 from adsb_listener import ADSBListener
 
 from eci import *
 
 
-OBS_LOC = (np.deg2rad(37.728206),np.deg2rad(-122.407863), 25) # lat,long,alt (meters)
-OBS_HEADING = (10.0, 62.0) # alt,az, degrees
-OBS_FOV = (15.0,15.0) # span of view, degrees
-OBS_PX = (800,600)    # span of view, pixels
+OBS_LOC = [np.deg2rad(37.728206),np.deg2rad(-122.407863), 25] # lat,long,alt (meters)
+OBS_HEADING = [25.0, 62.0] # alt,az, degrees
+OBS_FOV = [24.0,32.0] # span of view, degrees
+OBS_PX = [800,600]    # span of view, pixels
 
 ADSB_HOST = "localhost"
 ADSB_PORT = 30003
@@ -112,12 +114,42 @@ def adsb_worker():
 import threading
 d = threading.Thread(name='adsb_worker', target=adsb_worker)
 d.setDaemon(True)
-
-
 d.start()
 
+
+cap = cv2.VideoCapture(-1)
+if not cap.isOpened():
+    raise Exception("Couldn't open video capture")
+cap.set(3,480)
+cap.set(4,640)
+cap.set(15, 0.1)
+flag,frame = cap.read()
+if not flag:
+    raise Exception("error getting initial frame")
+OBS_PX[0] = frame.shape[0] # yay for backwards math notation being alt,az!
+OBS_PX[1] = frame.shape[1]
+
+print "Reset OBS_PX to %s" % OBS_PX
+
+
+
+
+def corner(filename) :
+ im= filename
+
+ gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+
+ corners = cv2.goodFeaturesToTrack(gray,25,0.01,10)
+ corners = np.int0(corners)
+
+ for i in corners:
+    x,y = i.ravel()
+
+ return im
+
 while True:
-    time.sleep(1)
+    ret,img = cap.read()
+
     for ecipp in PLANES.values():
         if ecipp.lon == 0:
             continue
@@ -125,4 +157,19 @@ while True:
         pxpos = aa_deg2px(alt,az)
 
         if pxpos:
-            print ecipp.plane.addr, pxpos
+            nom = ecipp.plane.flight if ecipp.plane.flight else ecipp.plane.addr
+
+            text_color = (255,0,0)
+            cv2.circle(img,(pxpos[1],pxpos[0]),3,(128,128,255),-1)
+            cv2.putText(img, nom, (pxpos[1], pxpos[0]), cv2.FONT_HERSHEY_PLAIN, 1.0, text_color, thickness=1)
+
+            #print ecipp.plane.addr, pxpos
+    cv2.imshow("input", corner(img))
+
+    key = cv2.waitKey(10)
+    if key == 27:
+        break
+
+
+cv2.destroyAllWindows()
+cv2.VideoCapture(-1).release()
