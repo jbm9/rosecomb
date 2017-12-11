@@ -113,6 +113,8 @@ def adsb_worker():
         deleted = al.expire(time.time() - 10)
         for addr in deleted:
             print "         Expired %s" % addr
+            if addr in PLANES:
+                del PLANES[addr]
 
 
 import threading
