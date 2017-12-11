@@ -157,7 +157,7 @@ class CamHandler(BaseHTTPRequestHandler):
             while True:
                 if curimg is None:
                     return
-                imgRGB = cv2.cvtColor(curimg,cv2.COLOR_BGR2RGB)
+                imgRGB = cv2.cvtColor(curimg,cv2.COLOR_GRAY2RGB)
                 r, buf = cv2.imencode(".jpg",imgRGB)
                 self.wfile.write("--jpgboundary\r\n")
                 self.send_header('Content-type','image/jpeg')
@@ -214,8 +214,19 @@ OBS_PX[1] = frame.shape[1]
 print "Reset OBS_PX to %s" % OBS_PX
 
 
+def brighten(img):
+    p5 = np.percentile(img, 5)
+    p75 = np.percentile(img, 75)
+
+    retval = (img - p5) * 255.0/p75
+    return retval
+
+
 while True:
     ret,img = cap.read()
+
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    img = brighten(img) # A bit of a hail mary for crappy webcams
 
     any_planes = False
 
