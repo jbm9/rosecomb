@@ -7,10 +7,29 @@
 #   (I also use --device-index 1 --interactive --interactive-rows 30 )
 # This will set up a listener on your localhost that the following connects to.
 
+
+# Do the config load before importing cv2, as it's slow as hell.
+import sys
+import json
+
+if len(sys.argv) != 2:
+    print "Usage: adsb_hud.py config.json"
+    sys.exit(1)
+
+f = file(sys.argv[1])
+config = json.load(f)
+f.close()
+
+import signal
+
 import time
 import numpy as np
 
-import cv2
+t0 = time.time()
+import cv2 # XXX Why does this take so long?!
+t1 = time.time()
+
+print "Loading cv2 took %0.3f" % (t1-t0)
 
 from adsb_listener import ADSBListener
 
@@ -21,13 +40,10 @@ from eci import *
 from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
 
 
-OBS_LOC = [np.deg2rad(37.728206),np.deg2rad(-122.407863), 25] # lat,long,alt (meters)
-OBS_HEADING = [25.0, 30.0] # alt,az, degrees
-OBS_FOV = [30.0,40.0] # span of view, degrees
-OBS_PX = [240,320]    # span of view, pixels (height, then width, because math)
-
-ADSB_HOST = "localhost"
-ADSB_PORT = 30003
+OBS_LOC = [np.deg2rad(config['loc']['lat']),np.deg2rad(config['loc']['lon']), config['loc']['alt']] # lat,long,alt (meters)
+OBS_HEADING = [config['camera_loc']['alt'], config['camera_loc']['az']] # alt,az, degrees
+OBS_FOV = config['camera']['FOV'] # span of view, degrees
+OBS_PX = config['camera']['resolution']    # span of view, pixels (height, then width, because math)
 
 
 def aa_deg2px(alt, az):
@@ -55,8 +71,6 @@ def aa_deg2px(alt, az):
 
     if px_az < 0 or px_az >= OBS_PX[1]:
         return None
-
-
     return (px_alt, px_az)
 
 class ECIPlanePoint(ECIEarthPoints):
@@ -106,16 +120,20 @@ def plane_spotted(plane):
 
 
 def adsb_worker():
-    al = ADSBListener('localhost', 30003, plane_spotted)
-    while True:
-        al._poll()
-        time.sleep(0.001)
-        deleted = al.expire(time.time() - 10)
-        for addr in deleted:
-            print "         Expired %s" % addr
-            if addr in PLANES:
-                del PLANES[addr]
-
+    try:
+        al = ADSBListener(config['adsb']['server'], config['adsb']['port'], plane_spotted)
+        while True:
+            al._poll()
+            time.sleep(0.001)
+            deleted = al.expire(time.time() - 10)
+            for addr in deleted:
+                print "         Expired %s" % addr
+                if addr in PLANES:
+                    del PLANES[addr]
+    except Exception, e:
+        print "ADSB Worker Exception: %s" % e
+        os.kill(os.getpid(), signal.SIGINT) # send an interrupt to kill ourself
+        sys.exit(1)
 
 import threading
 d = threading.Thread(name='adsb_worker', target=adsb_worker)
@@ -154,17 +172,24 @@ class CamHandler(BaseHTTPRequestHandler):
             self.send_header('Content-type','text/html')
             self.end_headers()
             self.wfile.write('<html><head></head><body>')
-            self.wfile.write('<img src="http://127.0.0.1:9090/cam.mjpg"/>')
+            self.wfile.write('<img src="/cam.mjpg"/>')
             self.wfile.write('</body></html>')
             return
 
 def http_worker():
-    server = HTTPServer(('',9090),CamHandler)
-    print "Server started"
-    server.serve_forever()
-http_server = threading.Thread(name='http_server', target=http_worker)
-http_server.setDaemon(True)
-http_server.start()
+    try:
+        server = HTTPServer((config['http_server']['bindaddr'],config['http_server']['port']),CamHandler)
+        print "Server started"
+        server.serve_forever()
+    except Exception, e:
+        print "Error in HTTP Worker: %s" % e
+        os.kill(os.getpid(), signal.SIGINT)
+
+
+if config['http_server']['enabled']:
+    http_server = threading.Thread(name='http_server', target=http_worker)
+    http_server.setDaemon(True)
+    http_server.start()
 
 
 
@@ -217,14 +242,14 @@ while True:
     curimg = img
     sleep_time = 10 if any_planes else 300
 
-    if os.getenv("DISPLAY"):
+    if config['run_headless']:
+        time.sleep(sleep_time/1000.0)
+    else:
         cv2.imshow("input", img)
         key = cv2.waitKey(sleep_time)
         if key == 27:
             break
-    else:
-        time.sleep(sleep_time/1000.0)
 
-
-cv2.destroyAllWindows()
+if not config['run_headless']:
+    cv2.destroyAllWindows()
 cv2.VideoCapture(-1).release()

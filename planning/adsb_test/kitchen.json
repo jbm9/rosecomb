@@ -1,0 +1,17 @@
+{
+    "__loc_comment": "lat/lon in decimal degrees, altitude in meters asl",
+    "loc": { "lat": 37.728206, "lon": -122.407863, "alt": 25},
+
+    "camera": { "name": "Creative Live Cam",
+		"FOV": [30.0, 40.0],
+		"resolution": [240, 320] },
+
+    "camera_loc": { "alt": 25.0, "az": 30.0 },
+    
+    "adsb": { "server": "localhost", "port": 30003 },
+
+    "__http_server_comment": "To get an mjpeg cam server, set these. Note that bindaddr should be an empty string for 0.0.0.0",
+    "http_server": { "enabled": 1, "port": 9090, "bindaddr": "" },
+
+    "run_headless": 1
+}
