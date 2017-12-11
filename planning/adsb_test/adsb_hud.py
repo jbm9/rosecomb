@@ -234,8 +234,16 @@ while True:
 
             text_color = (255,0,0)
             cv2.circle(img,(x,y),3,(128,128,255),-1)
-            text_height = max(30.0/d, 0.33)
-            cv2.putText(img, nom, (x,y), cv2.FONT_HERSHEY_PLAIN, 50.0/d, text_color, thickness=1)
+            text_height = min(1.5, max(30.0/d, 0.33))
+            cv2.putText(img, nom, (x,y), cv2.FONT_HERSHEY_PLAIN, text_height, text_color, thickness=1)
+
+    cv2.putText(img,
+                time.strftime("%Y-%m-%d %T %Z"),
+                (0, OBS_PX[0]),
+                cv2.FONT_HERSHEY_PLAIN,
+                1.0,
+                (0,255,0),
+                thickness=1)
 
             #print ecipp.plane.addr, pxpos
 
