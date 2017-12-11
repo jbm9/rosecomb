@@ -157,7 +157,7 @@ class CamHandler(BaseHTTPRequestHandler):
             while True:
                 if curimg is None:
                     return
-                imgRGB = cv2.cvtColor(curimg,cv2.COLOR_GRAY2RGB)
+                imgRGB = cv2.cvtColor(np.array(curimg, dtype=np.uint8),cv2.COLOR_GRAY2RGB)
                 r, buf = cv2.imencode(".jpg",imgRGB)
                 self.wfile.write("--jpgboundary\r\n")
                 self.send_header('Content-type','image/jpeg')
