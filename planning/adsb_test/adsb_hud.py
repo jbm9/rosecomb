@@ -233,7 +233,7 @@ while True:
             y = OBS_PX[0] - 1 - y # origin funtime woo
 
             text_color = (255,0,0)
-            cv2.circle(img,(x,y),3,(128,128,255),-1)
+            cv2.circle(img,(x,y),5,(128,128,255),1)
             text_height = min(1.5, max(30.0/d, 0.33))
             cv2.putText(img, nom, (x,y), cv2.FONT_HERSHEY_PLAIN, text_height, text_color, thickness=1)
 
