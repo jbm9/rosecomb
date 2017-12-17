@@ -216,17 +216,26 @@ print "Reset OBS_PX to %s" % OBS_PX
 
 def brighten(img):
     p5 = np.percentile(img, 5)
-    p75 = np.percentile(img, 75)
+    p95 = np.percentile(img, 95)
 
-    retval = (img - p5) * 255.0/p75
+    retval = (img - p5) * 255.0/(p95-p5)
+    retval[retval < 0] = 0
+    retval[retval > 255] = 255
     return retval
+
+def posterize(img, percentile=75):
+    retval = (img - np.percentile(img, percentile)) * 255
+    retval[retval < 0] = 0
+    retval[retval > 255] = 255
+    return retval
+    
 
 
 while True:
     ret,img = cap.read()
 
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    img = brighten(img) # A bit of a hail mary for crappy webcams
+    img = posterize(img) # A bit of a hail mary for crappy webcams
 
     any_planes = False
 
