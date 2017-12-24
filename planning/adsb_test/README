@@ -1,0 +1,22 @@
+This is a very janky ADS-B HUD.  It uses an ADS-B feed (currently from
+dump1090) and OpenCV to create an annotated video overlay of a portion
+of the sky, highlighting the last reported positions of flights.
+
+It doesn't currently use the flight speed/heading/vertical speed data
+to interpolate positions yet, nor does it actually track the flight
+information from the video (partly because I have yet to actually see
+a plane in the video feed itself, due to limitations of the cameras
+I've been using).
+
+It does mostly work, though, and can create an HTTP listener that
+provides an MJPEG stream of the highlighted video, which is pretty
+neat.
+
+The code quality is very much "Plan to throw one away," so I'm
+releasing all the stuff in this directory as CC0.  If you use the
+code, I'd almost prefer you not mention me, as a lot of it is
+shamefully bad.  But it does work, so, there's that.
+
+Anyway.  Have fun with this!
+Josh Myer <josh@joshisanerd.com>
+SF, CA, USA 2017-12-23
