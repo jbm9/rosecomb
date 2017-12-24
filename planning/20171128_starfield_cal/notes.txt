@@ -1,0 +1,15 @@
+# First, crop out a chunk of IMG_1247.JPG in the upper right corner.
+# The window reflections in the image confuse the crap out of the solver =\
+
+# Actually generate the solution:
+
+/usr/local/astrometry/bin/solve-field --config /scratch/astrometry_index_wide/cfg 1247_crop.JPG
+
+# And now add a note on a known-high-magnitude star in the field
+/usr/local/astrometry/bin/plotann.py --grid-color='darkred' --grid-size=0.25 --grid-label=1.0  1247_crop.wcs 1247_crop.JPG foo.jpg -T 21661,+6.41 52.95 49.40 --tcolor=red
+
+# And one without the circle, because it's impossible see through
+
+/usr/local/astrometry/bin/plotann.py --grid-color='darkred' --grid-size=0.25 --grid-label=1.0  1247_crop.wcs 1247_crop.JPG foo2.jpg
+
+# And then we have confirmed that we get the +6.41 at the 2s exposure with this lens!
