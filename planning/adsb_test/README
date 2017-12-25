@@ -17,6 +17,14 @@ releasing all the stuff in this directory as CC0.  If you use the
 code, I'd almost prefer you not mention me, as a lot of it is
 shamefully bad.  But it does work, so, there's that.
 
+Using a Real Camera(TM) with this:
+
+I'm able to use my 500D with this by doing the following:
+mkfifo /tmp/camera
+gphoto2 --capture-movie --stdout > /tmp/camera
+
+and then setting the `designator` property of the camera to that path.
+
 Anyway.  Have fun with this!
 Josh Myer <josh@joshisanerd.com>
 SF, CA, USA 2017-12-23

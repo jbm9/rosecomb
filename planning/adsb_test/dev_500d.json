@@ -4,12 +4,13 @@
 
     "camera": {
 	"__descriptor_comment": "-1 for the first webcam, or can use a path for a FIFO",
-	"descriptor": 1,
-	"name": "Creative Live Cam",
-		"FOV": [30.0, 40.0],
-		"resolution": [240, 320] },
+	"descriptor": "/tmp/camera",
+	"name": "Canon 500D in FIFO",
+	"FOV": [4.259, 2.846],
+	"resolution": [616, 928]
+    },
 
-    "camera_loc": { "alt": 25.0, "az": 30.0 },
+    "camera_loc": { "alt": 6.0, "az": 55.0 },
     
     "adsb": { "server": "raspberrypi.local", "port": 30003 },
 

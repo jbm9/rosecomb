@@ -157,8 +157,7 @@ class CamHandler(BaseHTTPRequestHandler):
             while True:
                 if curimg is None:
                     return
-                imgRGB = cv2.cvtColor(np.array(curimg, dtype=np.uint8),cv2.COLOR_GRAY2RGB)
-                r, buf = cv2.imencode(".jpg",imgRGB)
+                r, buf = cv2.imencode(".jpg",img, [int(cv2.IMWRITE_JPEG_QUALITY), 99])
                 self.wfile.write("--jpgboundary\r\n")
                 self.send_header('Content-type','image/jpeg')
                 self.send_header('Content-length',str(len(buf)))
@@ -199,12 +198,9 @@ if config['http_server']['enabled']:
 
 
 
-cap = cv2.VideoCapture(-1)
+cap = cv2.VideoCapture(config['camera']['descriptor'])
 if not cap.isOpened():
     raise Exception("Couldn't open video capture")
-cap.set(3,480)
-cap.set(4,640)
-cap.set(15, 0.1)
 flag,frame = cap.read()
 if not flag:
     raise Exception("error getting initial frame")
@@ -234,8 +230,8 @@ def posterize(img, percentile=75):
 while True:
     ret,img = cap.read()
 
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    img = posterize(img) # A bit of a hail mary for crappy webcams
+    if config['camera'].get('colorspace', 'RGB') == "BGR":
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
     any_planes = False
 

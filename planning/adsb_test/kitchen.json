@@ -3,8 +3,11 @@
     "loc": { "lat": 37.728206, "lon": -122.407863, "alt": 25},
 
     "camera": { "name": "Creative Live Cam",
-		"FOV": [30.0, 40.0],
-		"resolution": [480, 640] },
+                "__descriptor_comment": "-1 for the first webcam, or can use a path for a FIFO",
+                "descriptor": -1,
+		"colorspace": "BGR",
+                "FOV": [30.0, 40.0],
+                "resolution": [480, 640] },
 
     "camera_loc": { "alt": 25.0, "az": 30.0 },
     
